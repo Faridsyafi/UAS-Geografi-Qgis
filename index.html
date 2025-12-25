@@ -14,7 +14,6 @@
     html, body { margin:0; padding:0; height:100%; }
     #map { width:100%; height:100%; }
 
-    /* Box UI */
     .box{
       background:#fff;
       padding:10px 12px;
@@ -22,7 +21,7 @@
       box-shadow:0 1px 10px rgba(0,0,0,.25);
       font:13px Arial, sans-serif;
       line-height:1.25;
-      max-width: 340px;
+      max-width: 360px;
     }
     .box .row{ display:flex; align-items:center; margin:4px 0; }
     .box .swatch{
@@ -45,27 +44,14 @@
       font-size:13px;
     }
     .btn:active{ transform: translateY(1px); }
-
-    /* Legend collapsible */
-    .legend-body{ margin-top:8px; }
     .hidden{ display:none; }
 
-    /* Mobile responsive */
+    /* Mobile */
     @media (max-width: 768px){
-      .box{
-        max-width: 250px;
-        padding:8px 10px;
-        font-size:12px;
-        border-radius:12px;
-      }
+      .box{ max-width: 250px; padding:8px 10px; font-size:12px; }
       .muted{ font-size:11px; }
       .btn{ padding:7px 9px; font-size:12px; }
-      /* geser biar nggak terlalu makan layar */
-      .leaflet-top.leaflet-left { margin-top: 6px; }
-      /* kecilkan kontrol zoom */
-      .leaflet-control-zoom a{
-        width:30px; height:30px; line-height:30px;
-      }
+      .leaflet-control-zoom a{ width:30px; height:30px; line-height:30px; }
     }
   </style>
 </head>
@@ -75,19 +61,15 @@
 
 <script>
 /* =========================================================
-   RESPONSIF untuk HP:
-   - Legend dibuat bisa toggle (buka/tutup)
-   - Box diperkecil di layar kecil
-   - fitBounds agar fokus ke area data
+  GitHub Pages-ready:
+  - Tidak pakai GeoServer/localhost
+  - Load data dari file GeoJSON di repo (folder /data)
 ========================================================= */
 
 /* ===============================
    MAP & BASEMAP
 =============================== */
-const map = L.map("map", {
-  zoomControl: true,
-  scrollWheelZoom: true
-}).setView([-7.653, 112.702], 13);
+const map = L.map("map").setView([-7.65, 112.70], 12);
 
 L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
   maxZoom: 19,
@@ -95,44 +77,16 @@ L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
 }).addTo(map);
 
 /* ===============================
-   DATA CONTOH (GANTI DENGAN DATA ASLI KAMU)
+   PATH GEOJSON (RELATIF → otomatis ikut domain GitHub Pages)
+   Jadi ini akan bekerja di:
+   https://faridsyafi.github.io/UAS-Geografi-Qgis/
 =============================== */
-const DATA_DESA = {
-  "type":"FeatureCollection",
-  "features":[
-    {"type":"Feature","properties":{"id":1,"nama":"Desa A","kecamatan":"Pandaan","terlayani":1},
-     "geometry":{"type":"Polygon","coordinates":[[[112.690,-7.645],[112.705,-7.645],[112.705,-7.655],[112.690,-7.655],[112.690,-7.645]]]}},
-    {"type":"Feature","properties":{"id":2,"nama":"Desa B","kecamatan":"Pandaan","terlayani":0},
-     "geometry":{"type":"Polygon","coordinates":[[[112.705,-7.645],[112.720,-7.645],[112.720,-7.655],[112.705,-7.655],[112.705,-7.645]]]}},
-    {"type":"Feature","properties":{"id":3,"nama":"Desa C","kecamatan":"Pandaan","terlayani":1},
-     "geometry":{"type":"Polygon","coordinates":[[[112.690,-7.655],[112.710,-7.655],[112.710,-7.665],[112.690,-7.665],[112.690,-7.655]]]}}
-  ]
-};
-
-const DATA_SEKOLAH = {
-  "type":"FeatureCollection",
-  "features":[
-    {"type":"Feature","properties":{"nama":"SD Negeri Contoh 1","jenis":"SD","desa":"Desa A","kecamatan":"Pandaan"},
-     "geometry":{"type":"Point","coordinates":[112.697,-7.650]}},
-    {"type":"Feature","properties":{"nama":"SMP Contoh 1","jenis":"SMP","desa":"Desa B","kecamatan":"Pandaan"},
-     "geometry":{"type":"Point","coordinates":[112.712,-7.650]}},
-    {"type":"Feature","properties":{"nama":"SMK Contoh 1","jenis":"SMK","desa":"Desa C","kecamatan":"Pandaan"},
-     "geometry":{"type":"Point","coordinates":[112.701,-7.660]}}
-  ]
-};
-
-const DATA_FASKES = {
-  "type":"FeatureCollection",
-  "features":[
-    {"type":"Feature","properties":{"nama":"Puskesmas Contoh","tipe":"PUSKESMAS","desa":"Desa A","kecamatan":"Pandaan"},
-     "geometry":{"type":"Point","coordinates":[112.700,-7.648]}},
-    {"type":"Feature","properties":{"nama":"Pustu Contoh","tipe":"PUSTU","desa":"Desa C","kecamatan":"Pandaan"},
-     "geometry":{"type":"Point","coordinates":[112.697,-7.662]}}
-  ]
-};
+const PATH_DESA    = "data/desa.geojson";
+const PATH_SEKOLAH = "data/sekolah.geojson";
+const PATH_FASKES  = "data/faskes.geojson";
 
 /* ===============================
-   HELPER STYLE
+   STYLE HELPERS
 =============================== */
 function warnaSekolah(j){
   j=(j||"").toUpperCase();
@@ -143,6 +97,7 @@ function warnaSekolah(j){
   if(j==="TK") return "#ff7f0e";
   return "#111";
 }
+
 function warnaFaskes(t){
   t=(t||"").toUpperCase();
   if(t==="RS") return "#6a3d9a";
@@ -150,6 +105,7 @@ function warnaFaskes(t){
   if(t==="PUSTU") return "#66a61e";
   return "#444";
 }
+
 function ukuranFaskes(t){
   t=(t||"").toUpperCase();
   if(t==="RS") return 9;
@@ -157,6 +113,7 @@ function ukuranFaskes(t){
   if(t==="PUSTU") return 6;
   return 6;
 }
+
 function styleDesa(feature){
   const terlayani = Number(feature?.properties?.terlayani) === 1;
   return {
@@ -168,93 +125,134 @@ function styleDesa(feature){
 }
 
 /* ===============================
-   LAYER DESA
+   GLOBAL LAYERS
 =============================== */
-const layerDesa = L.geoJSON(DATA_DESA, {
-  style: styleDesa,
-  onEachFeature: (f, layer) => {
-    layer.on("click", (e) => {
-      const p = f.properties || {};
-      const status = (Number(p.terlayani) === 1) ? "Terlayani" : "Tidak Terlayani";
-      L.popup()
-        .setLatLng(e.latlng)
-        .setContent(`
-          <b>Info Desa (Faskes 1000 m)</b><br><br>
-          <table border="1" cellpadding="6" style="border-collapse:collapse;font-size:12px">
-            <tr><th>ID</th><td>${p.id ?? "-"}</td></tr>
-            <tr><th>Nama</th><td>${p.nama ?? "-"}</td></tr>
-            <tr><th>Kecamatan</th><td>${p.kecamatan ?? "-"}</td></tr>
-            <tr><th>Status</th><td>${status}</td></tr>
-          </table>
-        `)
-        .openOn(map);
-    });
-  }
-}).addTo(map);
+let layerDesa = null;
+let layerSekolah = null;
+let layerFaskes = null;
 
 /* ===============================
-   LAYER SEKOLAH
+   POPUP HANDLERS
 =============================== */
-const layerSekolah = L.geoJSON(DATA_SEKOLAH, {
-  pointToLayer: (f, ll) => L.circleMarker(ll, {
-    radius: 6,
-    color: "#fff",
-    weight: 1,
-    fillColor: warnaSekolah(f?.properties?.jenis),
-    fillOpacity: 0.95
-  }),
-  onEachFeature: (f, l) => {
+function onEachDesa(f, layer){
+  layer.on("click", (e) => {
     const p = f.properties || {};
-    l.bindPopup(`
-      <b>${p.nama ?? "-"}</b><br>
-      Jenis: ${p.jenis ?? "-"}<br>
-      Desa: ${p.desa ?? "-"}<br>
-      Kecamatan: ${p.kecamatan ?? "-"}
-    `);
+    const status = (Number(p.terlayani) === 1) ? "Terlayani" : "Tidak Terlayani";
+
+    L.popup()
+      .setLatLng(e.latlng)
+      .setContent(`
+        <b>Info Desa (Faskes 1000 m)</b><br><br>
+        <table border="1" cellpadding="6" style="border-collapse:collapse;font-size:12px">
+          <tr><th>ID</th><td>${p.id ?? "-"}</td></tr>
+          <tr><th>Nama</th><td>${p.nama ?? "-"}</td></tr>
+          <tr><th>Kecamatan</th><td>${p.kecamatan ?? "-"}</td></tr>
+          <tr><th>Status</th><td>${status}</td></tr>
+        </table>
+      `)
+      .openOn(map);
+  });
+}
+
+function onEachSekolah(f, layer){
+  const p = f.properties || {};
+  layer.bindPopup(`
+    <b>${p.nama ?? "-"}</b><br>
+    Jenis: ${p.jenis ?? "-"}<br>
+    Desa: ${p.desa ?? "-"}<br>
+    Kecamatan: ${p.kecamatan ?? "-"}
+  `);
+}
+
+function onEachFaskes(f, layer){
+  const p = f.properties || {};
+  layer.bindPopup(`
+    <b>${p.nama ?? "-"}</b><br>
+    Tipe: ${p.tipe ?? "-"}<br>
+    Desa: ${p.desa ?? "-"}<br>
+    Kecamatan: ${p.kecamatan ?? "-"}
+  `);
+}
+
+/* ===============================
+   LOAD GEOJSON
+=============================== */
+async function loadGeoJSON(url){
+  const res = await fetch(url, { cache: "no-store" });
+  if(!res.ok){
+    throw new Error(`Gagal load: ${url} (HTTP ${res.status})`);
   }
-}).addTo(map);
+  return await res.json();
+}
 
-/* ===============================
-   LAYER FASKES
-=============================== */
-const layerFaskes = L.geoJSON(DATA_FASKES, {
-  pointToLayer: (f, ll) => L.circleMarker(ll, {
-    radius: ukuranFaskes(f?.properties?.tipe),
-    color: "#fff",
-    weight: 1,
-    fillColor: warnaFaskes(f?.properties?.tipe),
-    fillOpacity: 0.95
-  }),
-  onEachFeature: (f, l) => {
-    const p = f.properties || {};
-    l.bindPopup(`
-      <b>${p.nama ?? "-"}</b><br>
-      Tipe: ${p.tipe ?? "-"}<br>
-      Desa: ${p.desa ?? "-"}<br>
-      Kecamatan: ${p.kecamatan ?? "-"}
-    `);
+async function init(){
+  try{
+    const [desa, sekolah, faskes] = await Promise.all([
+      loadGeoJSON(PATH_DESA),
+      loadGeoJSON(PATH_SEKOLAH),
+      loadGeoJSON(PATH_FASKES)
+    ]);
+
+    // DESA
+    layerDesa = L.geoJSON(desa, {
+      style: styleDesa,
+      onEachFeature: onEachDesa
+    }).addTo(map);
+
+    // SEKOLAH
+    layerSekolah = L.geoJSON(sekolah, {
+      pointToLayer: (f, ll) => L.circleMarker(ll, {
+        radius: 6,
+        color: "#fff",
+        weight: 1,
+        fillColor: warnaSekolah(f?.properties?.jenis),
+        fillOpacity: 0.95
+      }),
+      onEachFeature: onEachSekolah
+    }).addTo(map);
+
+    // FASKES
+    layerFaskes = L.geoJSON(faskes, {
+      pointToLayer: (f, ll) => L.circleMarker(ll, {
+        radius: ukuranFaskes(f?.properties?.tipe),
+        color: "#fff",
+        weight: 1,
+        fillColor: warnaFaskes(f?.properties?.tipe),
+        fillOpacity: 0.95
+      }),
+      onEachFeature: onEachFaskes
+    }).addTo(map);
+
+    // FIT BOUNDS (biar langsung fokus Pandaan)
+    try{
+      const b = layerDesa.getBounds();
+      if (b.isValid()) map.fitBounds(b, { padding:[20,20] });
+    }catch(e){}
+
+    // Layer control
+    L.control.layers(null, {
+      "Desa (Status Terlayani)": layerDesa,
+      "Sekolah": layerSekolah,
+      "Fasilitas Kesehatan": layerFaskes
+    }, { collapsed: true }).addTo(map);
+
+  }catch(err){
+    console.error(err);
+    alert(
+      "Data GeoJSON tidak bisa dibaca.\n\n" +
+      "Pastikan file ada di repo:\n" +
+      "- data/desa.geojson\n" +
+      "- data/sekolah.geojson\n" +
+      "- data/faskes.geojson\n\n" +
+      "Dan export dari QGIS pakai EPSG:4326.\n\n" +
+      "Detail: " + err.message
+    );
   }
-}).addTo(map);
+}
+init();
 
 /* ===============================
-   FIT BOUNDS (biar HP langsung fokus area data)
-=============================== */
-try{
-  const b = layerDesa.getBounds();
-  if (b.isValid()) map.fitBounds(b, { padding:[20,20] });
-}catch(e){}
-
-/* ===============================
-   TOGGLE LAYER
-=============================== */
-L.control.layers(null, {
-  "Desa (Status Terlayani)": layerDesa,
-  "Sekolah": layerSekolah,
-  "Fasilitas Kesehatan": layerFaskes
-}, { collapsed: true }).addTo(map);
-
-/* ===============================
-   BOX JUDUL (TOP LEFT)
+   UI BOXES
 =============================== */
 const titleBox = L.control({ position: "topleft" });
 titleBox.onAdd = function () {
@@ -270,20 +268,15 @@ titleBox.onAdd = function () {
     Andreas Natanael I (125)<br>
     Dwi Arif P (147)
   `;
-  // biar klik/scroll di box nggak menggeser peta
   L.DomEvent.disableClickPropagation(div);
   L.DomEvent.disableScrollPropagation(div);
   return div;
 };
 titleBox.addTo(map);
 
-/* ===============================
-   RINGKASAN (TOP RIGHT)
-=============================== */
 const summary = L.control({ position: "topright" });
 summary.onAdd = function () {
   const div = L.DomUtil.create("div", "box");
-  // Angka ringkasan bisa kamu ganti manual sesuai hasil analisismu
   div.innerHTML = `
     <b>Ringkasan Data Pandaan</b>
     <table style="margin-top:6px;font-size:13px">
@@ -292,6 +285,7 @@ summary.onAdd = function () {
       <tr><td>Jumlah Sekolah</td><td style="padding-left:10px">: 18</td></tr>
       <tr><td>Jumlah Faskes</td><td style="padding-left:10px">: 6</td></tr>
     </table>
+    <div class="muted" style="margin-top:6px">Sumber basemap: OpenStreetMap</div>
   `;
   L.DomEvent.disableClickPropagation(div);
   L.DomEvent.disableScrollPropagation(div);
@@ -300,13 +294,11 @@ summary.onAdd = function () {
 summary.addTo(map);
 
 /* ===============================
-   LEGENDA (BOTTOM RIGHT) - COLLAPSIBLE UNTUK HP
+   LEGENDA (BOTTOM RIGHT) COLLAPSIBLE UNTUK HP
 =============================== */
 const legend = L.control({ position:"bottomright" });
 legend.onAdd = function(){
   const d = L.DomUtil.create("div","box");
-
-  // default: di HP legend disembunyikan biar nggak nutup peta
   const isMobile = window.matchMedia("(max-width: 768px)").matches;
 
   d.innerHTML = `
@@ -315,7 +307,7 @@ legend.onAdd = function(){
       <div class="btn" id="btnLegend">${isMobile ? "Tampilkan" : "Sembunyikan"}</div>
     </div>
 
-    <div id="legendBody" class="legend-body ${isMobile ? "hidden" : ""}">
+    <div id="legendBody" class="${isMobile ? "hidden" : ""}" style="margin-top:8px">
       <hr class="hr">
       <b>Legenda Sekolah</b>
       <div class='row'><span class='swatch' style='background:#1f77b4'></span>SD</div>
@@ -337,11 +329,9 @@ legend.onAdd = function(){
     </div>
   `;
 
-  // stop event supaya map tidak geser
   L.DomEvent.disableClickPropagation(d);
   L.DomEvent.disableScrollPropagation(d);
 
-  // toggle
   setTimeout(() => {
     const btn = d.querySelector("#btnLegend");
     const body = d.querySelector("#legendBody");
@@ -356,7 +346,6 @@ legend.onAdd = function(){
   return d;
 };
 legend.addTo(map);
-
 </script>
 </body>
 </html>
